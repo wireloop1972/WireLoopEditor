@@ -14,8 +14,12 @@ export default function Home() {
           Empowering the future with intelligent AI assistants and seamless automation
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
-          <Button size="lg">Get Started</Button>
-          <Button variant="outline" size="lg">Learn More</Button>
+          <Link href="/agents">
+            <Button size="lg">Get Started with Agents</Button>
+          </Link>
+          <Link href="/assistants">
+            <Button variant="outline" size="lg">Explore Assistants</Button>
+          </Link>
         </div>
       </section>
 
@@ -31,8 +35,8 @@ export default function Home() {
           href="/agents"
           className="group p-6 rounded-lg bg-black/40 backdrop-blur-sm border border-orange-500/20 hover:bg-black/60 hover:border-orange-500/40 transition-all duration-300"
         >
-          <h3 className="text-xl font-semibold text-orange-500 mb-3 group-hover:text-orange-400">Agents</h3>
-          <p>Autonomous AI agents that adapt and learn from your computer interactions, automating complex tasks and workflows while maintaining security and control.</p>
+          <h3 className="text-xl font-semibold text-orange-500 mb-3 group-hover:text-orange-400">Agent Swarm</h3>
+          <p>Experience the power of collaborative AI with our agent swarm technology. Multiple specialized agents work together seamlessly to solve complex tasks, adapting and learning from each interaction.</p>
         </Link>
         <Link 
           href="/runtime"

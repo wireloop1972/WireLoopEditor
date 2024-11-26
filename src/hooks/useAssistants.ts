@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { CreateAssistantParams, Assistant } from '@/lib/openai';
 
 interface UseAssistantsReturn {
@@ -16,6 +16,10 @@ export function useAssistants(): UseAssistantsReturn {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    listAssistants();
+  }, []);
 
   const handleError = (error: unknown) => {
     console.error('Assistant operation failed:', error);
@@ -53,15 +57,21 @@ export function useAssistants(): UseAssistantsReturn {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('Fetching assistants...');
       const response = await fetch('/api/assistants');
+      console.log('Response:', response);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Failed to fetch assistants:', errorData);
         throw new Error(errorData.error || 'Failed to list assistants');
       }
 
       const data = await response.json();
-      setAssistants(data.data || []);
+      console.log('Fetched assistants:', data);
+      setAssistants(data || []);
     } catch (error) {
+      console.error('Error fetching assistants:', error);
       handleError(error);
     } finally {
       setIsLoading(false);

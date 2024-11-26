@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
-import type { SimpleTool } from '@/lib/openai';
+import type { SimpleTool, AssistantTool, AssistantToolType } from '@/lib/openai';
 
 const models = [
   {
@@ -34,15 +34,15 @@ const models = [
   },
 ];
 
-const tools = [
+const tools: Array<{ type: AssistantToolType; name: string; description: string }> = [
   {
-    type: 'code_interpreter' as const,
+    type: 'code_interpreter',
     name: 'Code Interpreter',
     description: 'Execute code and perform numerical computations',
   },
   {
-    type: 'file_search' as const,
-    name: 'File Search',
+    type: 'retrieval',
+    name: 'Retrieval',
     description: 'Search and analyze files and documents',
   },
 ];

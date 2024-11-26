@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { useAssistants } from '@/hooks/useAssistants';
-import type { Assistant, AssistantTool } from '@/lib/openai';
+import type { Assistant, AssistantTool, AssistantToolType } from '@/lib/openai';
 
 interface EditAssistantPageProps {
   params: Promise<{
@@ -40,10 +40,15 @@ export default function EditAssistantPage({ params }: EditAssistantPageProps) {
     switch (tool.type) {
       case 'code_interpreter':
         return 'Code Interpreter';
-      case 'file_search':
-        return 'File Search';
+      case 'retrieval':
+        return 'Retrieval';
       case 'function':
         return `Function: ${tool.function.name}`;
+      default: {
+        // Assert that we might have an unknown tool type
+        const type = tool.type as string;
+        return type;
+      }
     }
   };
 

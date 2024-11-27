@@ -39,6 +39,13 @@ export default function Home() {
           <p>Experience the power of collaborative AI with our agent swarm technology. Multiple specialized agents work together seamlessly to solve complex tasks, adapting and learning from each interaction.</p>
         </Link>
         <Link 
+          href="/mcp"
+          className="group p-6 rounded-lg bg-black/40 backdrop-blur-sm border border-orange-500/20 hover:bg-black/60 hover:border-orange-500/40 transition-all duration-300"
+        >
+          <h3 className="text-xl font-semibold text-orange-500 mb-3 group-hover:text-orange-400">Model Context Protocol</h3>
+          <p>Advanced context management and protocol handling for AI models. Leverage Anthropic's MCP for enhanced model interactions, structured communication, and efficient context sharing between agents.</p>
+        </Link>
+        <Link 
           href="/runtime"
           className="group p-6 rounded-lg bg-black/40 backdrop-blur-sm border border-orange-500/20 hover:bg-black/60 hover:border-orange-500/40 transition-all duration-300"
         >

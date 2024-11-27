@@ -6,10 +6,8 @@ const nextConfig = {
     }
     return config;
   },
-  // Ensure we can use WebSocket in Edge Runtime
-  experimental: {
-    serverComponentsExternalPackages: ['ws'],
-  },
+  // External packages configuration
+  serverExternalPackages: ['ws'],
   // Optimize WebSocket connections
   serverRuntimeConfig: {
     ws: {

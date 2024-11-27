@@ -6,6 +6,12 @@ export async function POST(request: Request) {
   try {
     const task = await request.json() as TaskContext;
     
+    // Get the assigned agent ID from the task history
+    const assignedAgentId = task.history[0]?.agentId;
+    if (!assignedAgentId) {
+      throw new Error('No agent assigned to this task');
+    }
+
     // Create a new thread
     const thread = await openai.beta.threads.create();
 
@@ -17,7 +23,7 @@ export async function POST(request: Request) {
 
     // Run the assistant
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: task.history[0]?.agentId || '',
+      assistant_id: assignedAgentId,
     });
 
     // Wait for completion

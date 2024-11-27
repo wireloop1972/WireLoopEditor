@@ -118,6 +118,18 @@ export const useSwarm = () => {
     );
   }, [agents]);
 
+  // Deregister an agent
+  const deregisterAgent = useCallback(async (agentId: string) => {
+    try {
+      await fetch(`/api/agents/${agentId}`, {
+        method: 'DELETE',
+      });
+      setAgents(prev => prev.filter(agent => agent.id !== agentId));
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Failed to deregister agent');
+    }
+  }, []);
+
   return {
     agents,
     isInitializing,
@@ -127,5 +139,6 @@ export const useSwarm = () => {
     handleHandoff,
     getAgent,
     getAvailableAgents,
+    deregisterAgent,
   };
 }; 

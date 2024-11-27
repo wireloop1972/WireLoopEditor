@@ -5,13 +5,24 @@ import type {
   AssistantUpdateParams,
 } from 'openai/resources/beta/assistants';
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('Missing OPENAI_API_KEY environment variable');
-}
+// Initialize OpenAI client with error handling
+const getOpenAIClient = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error(
+      'OpenAI API key not found. Please set OPENAI_API_KEY in your environment variables.'
+    );
+  }
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+  return new OpenAI({
+    apiKey,
+    maxRetries: 3,
+    timeout: 30000,
+  });
+};
+
+export const openai = getOpenAIClient();
 
 // Define the exact tool types from OpenAI's API
 export type AssistantToolType = 'code_interpreter' | 'retrieval' | 'function' | 'file_search';
@@ -32,7 +43,7 @@ export interface CodeInterpreterTool {
 }
 
 export interface RetrievalTool {
-  type: 'retrieval' | 'file_search';  // Support both types
+  type: 'retrieval' | 'file_search';
 }
 
 // Combine all tool types
@@ -62,5 +73,21 @@ export interface CreateAssistantParams extends Omit<AssistantCreateParams, 'file
 
 export interface UpdateAssistantParams extends Omit<AssistantUpdateParams, 'file_ids'> {
   fileIds?: string[];
+}
+
+// Error handling helper
+export class OpenAIError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'OpenAIError';
+  }
+}
+
+// Helper function to handle OpenAI API errors
+export function handleOpenAIError(error: unknown): never {
+  if (error instanceof Error) {
+    throw new OpenAIError(error.message, error);
+  }
+  throw new OpenAIError('An unknown error occurred while communicating with OpenAI');
 }
  

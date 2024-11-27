@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useSwarm } from '@/hooks/useSwarm';
 import Button from '@/components/ui/Button';
+import SwarmConfig from '@/components/config/SwarmConfig';
+import AgentConfig from '@/components/config/AgentConfig';
 
 export default function AgentsPage() {
   const { agents, isInitializing, error, getAvailableAgents } = useSwarm();
@@ -20,10 +22,28 @@ export default function AgentsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-12">
-        <h1 className="text-4xl font-bold text-orange-500 mb-4">AI Agent Swarm</h1>
-        <p className="text-orange-200/80">
-          Manage and monitor your AI agent swarm. View agent status, workload, and relationships.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-orange-500 mb-4">AI Agent Swarm</h1>
+            <p className="text-orange-200/80">
+              Manage and monitor your AI agent swarm. View agent status, workload, and relationships.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <SwarmConfig 
+              onConfigUpdate={(config) => {
+                console.log('Swarm config updated:', config);
+                // TODO: Implement swarm configuration update
+              }}
+            />
+            <AgentConfig 
+              onConfigUpdate={(config) => {
+                console.log('Agent config updated:', config);
+                // TODO: Implement agent configuration update
+              }}
+            />
+          </div>
+        </div>
       </header>
 
       <div className="space-y-8">

@@ -1,53 +1,70 @@
-import { AgentRole } from '@/types/swarm';
+import { AgentRole, AgentCapability } from '@/types/swarm';
 
 export interface RuntimeConfig {
   maxConcurrentTasks: number;
-  taskTimeout: number;
-  retryAttempts: number;
-  contextTTL: number;
+  maxRetries: number;
+  timeoutMs: number;
+  enableCircuitBreaker: boolean;
+  circuitBreakerConfig: {
+    failureThreshold: number;
+    resetTimeoutMs: number;
+  };
 }
 
 export interface RuntimeOptions {
-  enableSwarm: boolean;
-  enableMCP: boolean;
   enableLogging: boolean;
   enableMetrics: boolean;
+  enableTracing: boolean;
+  enableDebugMode: boolean;
+  enableSwarm: boolean;
+  enableMCP: boolean;
 }
 
 export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   maxConcurrentTasks: 5,
-  taskTimeout: 30000, // 30 seconds
-  retryAttempts: 3,
-  contextTTL: 3600000, // 1 hour
+  maxRetries: 3,
+  timeoutMs: 30000,
+  enableCircuitBreaker: true,
+  circuitBreakerConfig: {
+    failureThreshold: 5,
+    resetTimeoutMs: 60000,
+  },
 };
 
 export const DEFAULT_RUNTIME_OPTIONS: RuntimeOptions = {
-  enableSwarm: true,
-  enableMCP: true,
   enableLogging: true,
   enableMetrics: true,
+  enableTracing: false,
+  enableDebugMode: false,
+  enableSwarm: true,
+  enableMCP: true,
 };
 
 export const RUNTIME_AGENT_ROLES: AgentRole[] = [
   {
     id: 'orchestrator',
     name: 'Runtime Orchestrator',
-    capabilities: ['task-orchestration', 'resource-management', 'error-handling'],
+    capabilities: [
+      AgentCapability.TASK_EXECUTION,
+      AgentCapability.COORDINATION,
+      AgentCapability.PLANNING
+    ],
     specialization: 'runtime orchestration',
     priority: 100,
+    metadata: {},
+    description: 'Orchestrates task execution and agent coordination',
   },
   {
     id: 'context-manager',
     name: 'Context Manager',
-    capabilities: ['context-tracking', 'state-management', 'memory-optimization'],
+    capabilities: [
+      AgentCapability.DATA_PROCESSING,
+      AgentCapability.ANALYSIS,
+      AgentCapability.OPTIMIZATION
+    ],
     specialization: 'context management',
     priority: 90,
-  },
-  {
-    id: 'performance-monitor',
-    name: 'Performance Monitor',
-    capabilities: ['metrics-collection', 'performance-analysis', 'optimization'],
-    specialization: 'performance monitoring',
-    priority: 80,
+    metadata: {},
+    description: 'Manages context and state across the runtime',
   },
 ]; 

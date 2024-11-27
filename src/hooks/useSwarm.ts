@@ -1,36 +1,18 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
-import { TaskContext, AgentState, AgentRole } from '@/types/swarm';
+import { Agent, AgentRole } from '@/types/swarm';
 import { SWARM_CONFIG } from '@/config/swarm';
 
 export const useSwarm = () => {
-  const [agents, setAgents] = useState<AgentState[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Initialize the swarm
-  useEffect(() => {
-    const initializeSwarm = async () => {
-      try {
-        const response = await fetch('/api/agents');
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to initialize agents');
-        }
-        const initializedAgents = await response.json();
-        setAgents(initializedAgents);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to initialize swarm'));
-      } finally {
-        setIsInitializing(false);
-      }
-    };
+  const getAvailableAgents = useCallback(() => {
+    return agents.filter(agent => agent.isAvailable);
+  }, [agents]);
 
-    setIsInitializing(true);
-    setError(null);
-    initializeSwarm();
-  }, []);
-
-  // Create a new agent
   const createAgent = useCallback(async (role: AgentRole) => {
     try {
       const response = await fetch('/api/agents', {
@@ -38,7 +20,7 @@ export const useSwarm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(role),
+        body: JSON.stringify({ role }),
       });
 
       if (!response.ok) {
@@ -46,99 +28,68 @@ export const useSwarm = () => {
         throw new Error(errorData.error || 'Failed to create agent');
       }
 
-      const newAgent = await response.json();
-      setAgents(prev => [...prev, newAgent]);
-      return newAgent;
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to create agent');
+      const agent = await response.json();
+      setAgents(prev => [...prev, agent]);
+      return agent;
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error('Failed to create agent'));
+      throw error;
     }
   }, []);
 
-  // Process a task using the swarm
-  const processTask = useCallback(async (task: TaskContext) => {
-    try {
-      const response = await fetch('/api/agents/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(task),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process task');
-      }
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to process task');
-    }
-  }, []);
-
-  // Handle agent handoff
-  const handleHandoff = useCallback(async (
-    fromAgentId: string,
-    toAgentId: string,
-    taskId: string,
-    context: TaskContext
-  ) => {
-    try {
-      const response = await fetch('/api/agents/handoff', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fromAgentId,
-          toAgentId,
-          taskId,
-          context,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to handle handoff');
-      }
-
-      return await response.json();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to handle handoff');
-    }
-  }, []);
-
-  // Get agent by ID
-  const getAgent = useCallback((agentId: string) => {
-    return agents.find(agent => agent.id === agentId);
-  }, [agents]);
-
-  // Get available agents
-  const getAvailableAgents = useCallback(() => {
-    return agents.filter(agent => 
-      agent.isAvailable && agent.currentLoad < SWARM_CONFIG.loadBalancing.maxLoad
-    );
-  }, [agents]);
-
-  // Deregister an agent
   const deregisterAgent = useCallback(async (agentId: string) => {
     try {
-      await fetch(`/api/agents/${agentId}`, {
+      // Optimistically remove the agent from local state
+      setAgents(prev => prev.filter(agent => agent.id !== agentId));
+
+      const response = await fetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
       });
-      setAgents(prev => prev.filter(agent => agent.id !== agentId));
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to deregister agent');
+
+      if (!response.ok) {
+        // If the deletion fails, we need to fetch the current state
+        await fetchAgents();
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to deregister agent');
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error('Failed to deregister agent'));
+      throw error;
     }
   }, []);
+
+  const fetchAgents = useCallback(async () => {
+    try {
+      setIsInitializing(true);
+      const response = await fetch('/api/agents');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch agents');
+      }
+
+      const agents = await response.json();
+      setAgents(agents);
+      setError(null);
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error('Failed to fetch agents'));
+      setAgents([]); // Reset agents on error
+    } finally {
+      setIsInitializing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
 
   return {
     agents,
     isInitializing,
     error,
-    createAgent,
-    processTask,
-    handleHandoff,
-    getAgent,
     getAvailableAgents,
+    createAgent,
     deregisterAgent,
+    refreshAgents: fetchAgents,
   };
 }; 

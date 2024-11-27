@@ -14,11 +14,11 @@ export default function Home() {
           Empowering the future with intelligent AI assistants and seamless automation
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
-          <Link href="/agents">
-            <Button size="lg">Get Started with Agents</Button>
+          <Link href="/docs/user-guide">
+            <Button size="lg">User Guide</Button>
           </Link>
-          <Link href="/assistants">
-            <Button variant="outline" size="lg">Explore Assistants</Button>
+          <Link href="/docs/admin">
+            <Button variant="outline" size="lg">Admin Documentation</Button>
           </Link>
         </div>
       </section>

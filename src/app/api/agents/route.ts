@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { openai } from '@/lib/openai';
+import { openai, handleOpenAIError } from '@/lib/openai';
 import { AgentRole } from '@/types/swarm';
 import { DEFAULT_AGENT_ROLES } from '@/config/swarm';
 
@@ -27,6 +27,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const role = body as AgentRole;
     
+    if (!role || !role.name || !role.specialization) {
+      return NextResponse.json(
+        { error: 'Invalid agent role configuration' },
+        { status: 400 }
+      );
+    }
+
     // Check if an agent with this role already exists
     const existingAssistants = await openai.beta.assistants.list({ limit: 100 });
     const existingAgent = existingAssistants.data.find(
@@ -73,26 +80,31 @@ export async function GET() {
     // Initialize agents, reusing existing ones or creating new ones as needed
     const agents = await Promise.all(
       DEFAULT_AGENT_ROLES.map(async (role) => {
-        const existingAssistant = existingAgents.get(role.name);
-        
-        if (existingAssistant) {
-          return assistantToAgentState(existingAssistant, role);
+        try {
+          const existingAssistant = existingAgents.get(role.name);
+          
+          if (existingAssistant) {
+            return assistantToAgentState(existingAssistant, role);
+          }
+
+          // Create new agent if it doesn't exist
+          const assistant = await openai.beta.assistants.create({
+            name: role.name,
+            description: `AI Assistant specialized in ${role.specialization}`,
+            model: 'gpt-4-1106-preview',
+            tools: [{ type: 'code_interpreter' }],
+            metadata: {
+              capabilities: role.capabilities.join(','),
+              specialization: role.specialization,
+              priority: role.priority.toString(),
+            },
+          });
+
+          return assistantToAgentState(assistant, role);
+        } catch (error) {
+          console.error(`Error creating agent ${role.name}:`, error);
+          throw error;
         }
-
-        // Create new agent if it doesn't exist
-        const assistant = await openai.beta.assistants.create({
-          name: role.name,
-          description: `AI Assistant specialized in ${role.specialization}`,
-          model: 'gpt-4-1106-preview',
-          tools: [{ type: 'code_interpreter' }],
-          metadata: {
-            capabilities: role.capabilities.join(','),
-            specialization: role.specialization,
-            priority: role.priority.toString(),
-          },
-        });
-
-        return assistantToAgentState(assistant, role);
       })
     );
 

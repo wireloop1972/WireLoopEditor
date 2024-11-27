@@ -2,9 +2,10 @@ import {
   AgentState, 
   TaskContext, 
   HandoffRequest, 
-  CircuitBreakerStatus,
-  CircuitBreakerConfig 
+  Agent,
+  AgentCapability
 } from '@/types/swarm';
+import { CircuitBreaker, CircuitBreakerConfig } from '@/utils/CircuitBreaker';
 
 class Queue<T> {
   private items: T[] = [];
@@ -26,51 +27,14 @@ class Queue<T> {
   }
 }
 
-export class CircuitBreaker {
-  private failures: number = 0;
-  private lastFailureTime: number = 0;
-  private status: CircuitBreakerStatus = 'CLOSED';
-
-  constructor(private config: CircuitBreakerConfig) {}
-
-  public recordFailure(): void {
-    this.failures++;
-    this.lastFailureTime = Date.now();
-    
-    if (this.failures >= this.config.failureThreshold) {
-      this.status = 'OPEN';
-    }
-  }
-
-  public recordSuccess(): void {
-    this.failures = 0;
-    this.status = 'CLOSED';
-  }
-
-  public canExecute(): boolean {
-    if (this.status === 'CLOSED') return true;
-    
-    if (this.status === 'OPEN' && 
-        Date.now() - this.lastFailureTime > this.config.resetTimeout) {
-      this.status = 'HALF_OPEN';
-      return true;
-    }
-    
-    return this.status === 'HALF_OPEN';
-  }
-}
-
 export class SwarmManager {
-  private agents: Map<string, AgentState>;
-  private activeThreads: Map<string, TaskContext>;
-  private handoffQueue: Queue<HandoffRequest>;
+  private agents: Map<string, Agent> = new Map();
+  private activeThreads: Map<string, TaskContext> = new Map();
+  private handoffQueue: Queue<HandoffRequest> = new Queue();
   private circuitBreaker: CircuitBreaker;
 
-  constructor(circuitBreakerConfig: CircuitBreakerConfig) {
-    this.agents = new Map();
-    this.activeThreads = new Map();
-    this.handoffQueue = new Queue();
-    this.circuitBreaker = new CircuitBreaker(circuitBreakerConfig);
+  constructor(config: CircuitBreakerConfig) {
+    this.circuitBreaker = new CircuitBreaker(config);
   }
 
   public registerAgent(agent: AgentState): void {
@@ -168,5 +132,41 @@ export class SwarmManager {
 
   public getHandoffQueueLength(): number {
     return this.handoffQueue.length;
+  }
+
+  public async findAvailableAgent(requiredCapabilities: string[]): Promise<Agent | null> {
+    const agents = Array.from(this.agents.values());
+    return agents.find(agent => 
+      agent.isAvailable && 
+      requiredCapabilities.every(cap => agent.capabilities.includes(cap as AgentCapability))
+    ) || null;
+  }
+
+  public async findAvailableAgents(requiredCapabilities: string[], count: number): Promise<Agent[]> {
+    const agents = Array.from(this.agents.values())
+      .filter(agent => 
+        agent.isAvailable && 
+        requiredCapabilities.every(cap => agent.capabilities.includes(cap as AgentCapability))
+      );
+    return agents.slice(0, count);
+  }
+
+  public async getAgent(agentId: string): Promise<Agent> {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+    return agent;
+  }
+
+  public async handleAgentHandoff(
+    sourceAgent: Agent,
+    targetAgent: Agent,
+    context: Record<string, any>
+  ): Promise<void> {
+    // Implement handoff logic
+    sourceAgent.isAvailable = true;
+    targetAgent.isAvailable = false;
+    targetAgent.context = { ...targetAgent.context, ...context };
   }
 } 
